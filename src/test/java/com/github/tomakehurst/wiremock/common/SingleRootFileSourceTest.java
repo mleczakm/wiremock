@@ -22,8 +22,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.jknack.handlebars.internal.lang3.StringUtils;
 import com.github.tomakehurst.wiremock.security.NotAuthorisedException;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -219,5 +221,15 @@ public class SingleRootFileSourceTest {
           String badPath = new File(EXIST_FILES_ROOT_PATH, "../illegal.file").getCanonicalPath();
           fileSource.getTextFileNamed(badPath);
         });
+  }
+
+  @Test
+    void willThrowExceptionWhenPathIsTooLong() {
+    assertThrows(
+            IOException.class,
+            () -> {
+                SingleRootFileSource fileSource = new SingleRootFileSource(EXIST_FILES_ROOT_PATH);
+                fileSource.writeBinaryFile(EXIST_FILES_ROOT_PATH + '/' + StringUtils.repeat('a', 4000), "stuff".getBytes());
+            });
   }
 }

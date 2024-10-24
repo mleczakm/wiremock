@@ -176,8 +176,28 @@ public abstract class AbstractFileSource implements FileSource {
       ensureDirectoryExists(toFile);
       Files.write(toFile.toPath(), contents);
     } catch (IOException ioe) {
-      throwUnchecked(ioe);
+      if (ioe.getMessage() != null && ioe.getMessage().contains("File name too long")) {
+        // Try to shorten the filename and save it anyway
+        String shortenedName = getShortenedName(toFile);
+        File shortenedFile = new File(toFile.getParent(), shortenedName);
+        writeBinaryFileAndTranslateExceptions(contents, shortenedFile);
+      } else {
+        throwUnchecked(ioe);
+      }
     }
+  }
+
+  private static String getShortenedName(File toFile) {
+    String originalName = toFile.getName();
+    int extensionIndex = originalName.lastIndexOf('.');
+    String extension = "";
+    String filename = originalName;
+    if (extensionIndex != -1) {
+      extension = originalName.substring(extensionIndex);
+      filename = originalName.substring(0, extensionIndex);
+    }
+    String shortenedFilename = filename.substring(0, Math.min(filename.length(), 100)); // arbitrary length, adjust as needed
+    return shortenedFilename + extension;
   }
 
   private void ensureDirectoryExists(File toFile) throws IOException {
